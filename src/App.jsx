@@ -186,6 +186,7 @@ export default function App() {
   // 팝업 상태
   const [actionPopup, setActionPopup] = useState(null);
   const [catchEvent, setCatchEvent] = useState(null);
+  const [previewCell, setPreviewCell] = useState(null); // 그림 클릭 시 문장 보여주기(연습용)
 
   const [currentTask, setCurrentTask] = useState(null);
   const [isListening, setIsListening] = useState(false);
@@ -589,6 +590,7 @@ export default function App() {
     )
       return;
 
+    setPreviewCell(cell);
     speakText(`${cell.question} ... ${cell.answer}`);
   };
 
@@ -607,6 +609,7 @@ export default function App() {
     setShowDicePopup(false);
     setActionPopup(null);
     setCatchEvent(null);
+    setPreviewCell(null);
   };
 
   const handleModeChange = (mode) => {
@@ -750,7 +753,7 @@ export default function App() {
       {gameState === 'lobby' && (
         <div className="w-full max-w-5xl bg-white/95 p-4 rounded-2xl shadow-md mb-4 text-center border-4 border-emerald-400 z-10 animate-pulse">
           <h2 className="text-xl md:text-2xl font-black text-emerald-700">
-            💡 게임 시작 전, 그림들을 클릭하며 배운 표현을 연습해봅시다.
+            💡 그림을 클릭하면 질문과 대답 문장이 나와요. 듣고 따라 읽고 공책에 써보며 연습해봅시다!
           </h2>
         </div>
       )}
@@ -907,6 +910,58 @@ export default function App() {
           >
             🚀 게임 시작하기!
           </button>
+        </div>
+      )}
+
+      {previewCell && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-[80] p-4 backdrop-blur-sm"
+          onClick={() => setPreviewCell(null)}
+        >
+          <div
+            className="bg-white rounded-[2rem] p-6 md:p-10 max-w-lg w-full text-center shadow-2xl border-8 border-emerald-400 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreviewCell(null)}
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-black text-xl flex items-center justify-center"
+            >
+              ✕
+            </button>
+
+            <div className="flex flex-col items-center mb-5">
+              <CellImage
+                src={previewCell.image}
+                alt={previewCell.answer}
+                fallbackEmoji={previewCell.emoji}
+                className="w-28 h-28 object-contain drop-shadow-md mb-3"
+                fallbackClass="text-7xl drop-shadow-md mb-3"
+              />
+              <span
+                className={`inline-block text-sm font-black px-3 py-1 rounded-xl shadow-sm border-2 ${UNIT_COLORS[previewCell.unit] || 'text-emerald-700 bg-emerald-50 border-emerald-300'}`}
+              >
+                {previewCell.unit}
+              </span>
+            </div>
+
+            <div className="space-y-3 text-left">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4">
+                <p className="text-xs font-black text-blue-500 uppercase tracking-wide mb-1">Question · 질문</p>
+                <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug">{previewCell.question}</p>
+              </div>
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4">
+                <p className="text-xs font-black text-amber-600 uppercase tracking-wide mb-1">Answer · 대답</p>
+                <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug">{previewCell.answer}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => speakText(`${previewCell.question} ... ${previewCell.answer}`)}
+              className="mt-6 px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(5,150,105,1)] active:shadow-none active:translate-y-1 transition-all"
+            >
+              🔊 다시 듣기
+            </button>
+          </div>
         </div>
       )}
 
