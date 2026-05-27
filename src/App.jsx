@@ -64,11 +64,12 @@ const BOARD_LAYOUT = [
 
 // 문장 칸에 붙는 사다리: { 출발칸id: 도착칸id } (위/아래 섞어서 배치)
 // 모든 칸은 일반(문장) 칸이며, 액션칸(11·14·18)·START(0)·FINISH(28)은 피함
-// 데스크톱(약 7칸/줄) 기준 위·아래로 인접한 칸끼리 연결해 세로 사다리로 보이게 함
+// 여러 줄 건너 대각선으로 연결해 사다리가 길고 크게 보이도록 함
+// (출발·도착 모두 일반칸, 액션칸 11·14·18 / START 0 / FINISH 28 회피)
 const LADDERS = {
-  3: 10, // 앞으로(아래 칸)
-  13: 20, // 앞으로(아래 칸)
-  22: 15, // 뒤로(위 칸)
+  3: 16, // 앞으로 (대각선)
+  6: 19, // 앞으로 (대각선)
+  25: 12, // 뒤로 (대각선)
 };
 
 const UNIT_COLORS = {
@@ -267,8 +268,8 @@ const renderLadderShape = (l, i) => {
   const len = Math.hypot(dx, dy) || 1;
   const nx = -(dy / len);
   const ny = dx / len;
-  const w = 9; // 레일 간격(절반)
-  const count = Math.max(2, Math.round(len / 18));
+  const w = 12; // 레일 간격(절반)
+  const count = Math.max(3, Math.round(len / 22));
   const rungs = [];
   for (let k = 0; k <= count; k++) {
     const t = k / count;
@@ -278,10 +279,10 @@ const renderLadderShape = (l, i) => {
   }
   return (
     <g key={i} strokeLinecap="round">
-      <line x1={x1 + nx * w} y1={y1 + ny * w} x2={x2 + nx * w} y2={y2 + ny * w} stroke="#b45309" strokeWidth="5" />
-      <line x1={x1 - nx * w} y1={y1 - ny * w} x2={x2 - nx * w} y2={y2 - ny * w} stroke="#b45309" strokeWidth="5" />
+      <line x1={x1 + nx * w} y1={y1 + ny * w} x2={x2 + nx * w} y2={y2 + ny * w} stroke="#b45309" strokeWidth="6" />
+      <line x1={x1 - nx * w} y1={y1 - ny * w} x2={x2 - nx * w} y2={y2 - ny * w} stroke="#b45309" strokeWidth="6" />
       {rungs.map((r, ri) => (
-        <line key={ri} x1={r[0]} y1={r[1]} x2={r[2]} y2={r[3]} stroke="#d97706" strokeWidth="3" />
+        <line key={ri} x1={r[0]} y1={r[1]} x2={r[2]} y2={r[3]} stroke="#d97706" strokeWidth="4" />
       ))}
     </g>
   );
@@ -1039,8 +1040,8 @@ export default function App() {
 
         <div className="absolute inset-0 pointer-events-none opacity-[0.04] z-0 bg-[radial-gradient(#000_2px,transparent_2px)] [background-size:20px_20px]"></div>
 
-        {/* 칸과 칸을 잇는 사다리 그림 (칸 사이 틈으로 보임) */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 5 }}>
+        {/* 칸과 칸을 잇는 사다리 그림 (칸 위에 반투명하게 얹어 통째로 보이게) */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 15, opacity: 0.7 }}>
           {ladderLines.map((l, i) => renderLadderShape(l, i))}
         </svg>
 
