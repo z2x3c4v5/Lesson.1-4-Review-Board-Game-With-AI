@@ -11,37 +11,29 @@ import React, { useState, useEffect, useRef } from 'react';
 //  - question / answer: 학생이 말할 영어 질문과 대답입니다.
 // =================================================================
 const UNIT_POOLS = {
-  'Unit 1': [
-    { image: null, question: 'Where are you from?', answer: "I'm from Korea." },
+  '1단원': [
+    { image: null, question: 'What grade are you in?', answer: "I'm in the first grade." },
+    { image: null, question: 'What grade are you in?', answer: "I'm in the second grade." },
+    { image: null, question: 'What grade are you in?', answer: "I'm in the third grade." },
     { image: null, question: 'What grade are you in?', answer: "I'm in the sixth grade." },
-    { image: null, question: 'When is your birthday?', answer: "It's June 5th." },
-    { image: null, question: 'How many classes do you have?', answer: 'I have five classes.' },
-    { image: null, question: 'What time do you get up?', answer: 'I get up at seven.' },
-    { image: null, question: "What's your favorite subject?", answer: 'My favorite subject is music.' },
   ],
-  'Unit 2': [
-    { image: null, question: 'How much is this cap?', answer: "It's ten dollars." },
-    { image: null, question: 'What size do you want?', answer: 'I want a large size.' },
-    { image: null, question: 'May I help you?', answer: 'I want some apples, please.' },
-    { image: null, question: 'How many do you want?', answer: 'I want three, please.' },
-    { image: null, question: 'What color do you want?', answer: 'I want a blue one.' },
-    { image: null, question: 'Can I help you?', answer: "Yes, I'm looking for a shirt." },
+  '2단원': [
+    { image: null, question: 'What season do you like?', answer: 'I like spring. I can see beautiful flowers.' },
+    { image: null, question: 'What season do you like?', answer: 'I like summer. I can eat watermelon.' },
+    { image: null, question: 'What season do you like?', answer: 'I like fall. I can see colorful leaves.' },
+    { image: null, question: 'What season do you like?', answer: 'I like winter. I can go skiing.' },
   ],
-  'Unit 3': [
-    { image: null, question: 'What did you do yesterday?', answer: 'I played soccer.' },
-    { image: null, question: 'How was your weekend?', answer: 'It was great.' },
-    { image: null, question: 'Where did you go?', answer: 'I went to the park.' },
-    { image: null, question: 'Did you have fun?', answer: 'Yes, I did.' },
-    { image: null, question: 'What did you eat?', answer: 'I ate pizza.' },
-    { image: null, question: 'Who did you meet?', answer: 'I met my friend.' },
+  '3단원': [
+    { image: null, question: 'When is your birthday?', answer: "It's on February 2nd." },
+    { image: null, question: 'When is school market?', answer: "It's on August 10th." },
+    { image: null, question: 'When is Earth day?', answer: "It's on April 22nd." },
+    { image: null, question: 'When is the sports day?', answer: "It's on May 1st." },
   ],
-  'Unit 4': [
-    { image: null, question: 'What do you want to be?', answer: 'I want to be a teacher.' },
-    { image: null, question: 'What are you going to do?', answer: "I'm going to read a book." },
-    { image: null, question: 'How do you feel?', answer: 'I feel happy.' },
-    { image: null, question: 'What time is it?', answer: "It's three o'clock." },
-    { image: null, question: 'Whose book is this?', answer: "It's mine." },
-    { image: null, question: "What's wrong?", answer: 'I have a cold.' },
+  '4단원': [
+    { image: null, question: 'Why are you happy?', answer: 'Because I got a black belt.' },
+    { image: null, question: 'Why are you sad?', answer: 'Because my dog is sick.' },
+    { image: null, question: 'Why are you angry?', answer: 'Because my brother broke my robot.' },
+    { image: null, question: 'Why are you tired?', answer: 'Because I cleaned my house.' },
   ],
 };
 
@@ -62,10 +54,10 @@ const BOARD_LAYOUT = [
 ];
 
 const UNIT_COLORS = {
-  'Unit 1': 'text-rose-700 bg-rose-50 border-rose-300',
-  'Unit 2': 'text-sky-700 bg-sky-50 border-sky-300',
-  'Unit 3': 'text-emerald-700 bg-emerald-50 border-emerald-300',
-  'Unit 4': 'text-violet-700 bg-violet-50 border-violet-300',
+  '1단원': 'text-rose-700 bg-rose-50 border-rose-300',
+  '2단원': 'text-sky-700 bg-sky-50 border-sky-300',
+  '3단원': 'text-emerald-700 bg-emerald-50 border-emerald-300',
+  '4단원': 'text-violet-700 bg-violet-50 border-violet-300',
 };
 
 const shuffle = (arr) => {
@@ -77,13 +69,21 @@ const shuffle = (arr) => {
   return a;
 };
 
-// 매 게임마다 단원별 6문장을 무작위로 뽑아 24개 일반칸에 배치한 보드를 생성
+// 한 단원에서 n개를 뽑는다. 표현이 n개보다 많으면 무작위로 n개를 뽑고,
+// 적으면 모든 표현을 한 번씩 쓴 뒤 무작위로 반복해 n개를 채운다.
+const pickForUnit = (pool, n) => {
+  const result = shuffle(pool);
+  while (result.length < n) {
+    result.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  return shuffle(result.slice(0, n));
+};
+
+// 매 게임마다 단원별 6문장을 뽑아 24개 일반칸에 무작위로 배치한 보드를 생성
 const buildBoard = () => {
   const picked = [];
   Object.entries(UNIT_POOLS).forEach(([unit, pool]) => {
-    shuffle(pool)
-      .slice(0, SENTENCES_PER_UNIT)
-      .forEach((item) => picked.push({ ...item, unit }));
+    pickForUnit(pool, SENTENCES_PER_UNIT).forEach((item) => picked.push({ ...item, unit }));
   });
   const contentQueue = shuffle(picked);
 
