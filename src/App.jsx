@@ -946,7 +946,7 @@ export default function App() {
           const isAiHere = aiPos === idx;
 
           let baseStyle =
-            'w-20 h-24 md:w-[120px] md:h-[140px] rounded-2xl flex flex-col items-center justify-center relative transform transition-all duration-300 hover:-translate-y-2 z-10 group';
+            'w-24 h-28 md:w-[148px] md:h-[168px] rounded-2xl flex flex-col items-center justify-center relative transform transition-all duration-300 hover:-translate-y-2 z-10 group';
           let cellStyle = '';
 
           if (cell.type === 'normal') {
@@ -989,8 +989,8 @@ export default function App() {
                     src={cell.image}
                     alt={cell.answer}
                     fallbackEmoji={cell.emoji}
-                    className="w-12 h-12 md:w-20 md:h-20 object-contain mb-1 drop-shadow-md transform transition-transform group-hover:scale-110"
-                    fallbackClass="text-4xl md:text-6xl mb-1 drop-shadow-md transform transition-transform group-hover:scale-110"
+                    className="w-16 h-16 md:w-[104px] md:h-[104px] object-contain mb-1 drop-shadow-md transform transition-transform group-hover:scale-110"
+                    fallbackClass="text-5xl md:text-7xl mb-1 drop-shadow-md transform transition-transform group-hover:scale-110"
                   />
                   <div
                     className={`text-[10px] md:text-xs font-black border-2 px-2 py-0.5 rounded-full shadow-inner mt-1 ${UNIT_COLORS[cell.unit] || 'text-[#5c3a21] bg-[#e8dcc4] border-[#d4bca3]'}`}
@@ -1057,8 +1057,8 @@ export default function App() {
                 src={previewCell.image}
                 alt={previewCell.answer}
                 fallbackEmoji={previewCell.emoji}
-                className="w-24 h-24 object-contain drop-shadow-md mb-3"
-                fallbackClass="text-6xl drop-shadow-md mb-3"
+                className="w-32 h-32 object-contain drop-shadow-md mb-3"
+                fallbackClass="text-8xl drop-shadow-md mb-3"
               />
               <span
                 className={`inline-block text-sm font-black px-3 py-1 rounded-xl shadow-sm border-2 ${UNIT_COLORS[previewCell.unit] || 'text-emerald-700 bg-emerald-50 border-emerald-300'}`}
@@ -1352,8 +1352,8 @@ export default function App() {
                     src={currentTask.cell.image}
                     alt={currentTask.answer}
                     fallbackEmoji={currentTask.cell.emoji}
-                    className="w-24 h-24 object-contain drop-shadow-md"
-                    fallbackClass="text-7xl drop-shadow-md"
+                    className="w-32 h-32 object-contain drop-shadow-md"
+                    fallbackClass="text-8xl drop-shadow-md"
                   />
                   <span className={`text-sm font-black px-3 py-1 rounded-xl shadow-sm border-2 ${UNIT_COLORS[currentTask.cell.unit] || 'text-blue-600 bg-white border-blue-200'}`}>
                     {currentTask.cell.unit}
@@ -1378,8 +1378,8 @@ export default function App() {
                     src={currentTask.cell.image}
                     alt={currentTask.answer}
                     fallbackEmoji={currentTask.cell.emoji}
-                    className="w-24 h-24 object-contain drop-shadow-md"
-                    fallbackClass="text-7xl drop-shadow-md"
+                    className="w-32 h-32 object-contain drop-shadow-md"
+                    fallbackClass="text-8xl drop-shadow-md"
                   />
                   <span className={`text-sm font-black px-3 py-1 rounded-xl shadow-sm border-2 ${UNIT_COLORS[currentTask.cell.unit] || 'text-blue-600 bg-white border-blue-200'}`}>
                     {currentTask.cell.unit}
@@ -1457,8 +1457,8 @@ export default function App() {
                   src={currentTask.cell.image}
                   alt={currentTask.answer}
                   fallbackEmoji={currentTask.cell.emoji}
-                  className="w-20 h-20 object-contain"
-                  fallbackClass="text-5xl"
+                  className="w-28 h-28 object-contain"
+                  fallbackClass="text-7xl"
                 />
                 <span className="text-sm font-black text-slate-500 border-2 border-slate-300 px-3 py-1 rounded-xl">
                   {currentTask.cell.unit}
