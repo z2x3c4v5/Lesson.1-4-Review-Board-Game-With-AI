@@ -12,10 +12,11 @@ import React, { useState, useEffect, useRef } from 'react';
 // =================================================================
 const UNIT_POOLS = {
   '1단원': [
-    { image: null, question: 'What grade are you in?', answer: "I'm in the first grade." },
-    { image: null, question: 'What grade are you in?', answer: "I'm in the second grade." },
-    { image: null, question: 'What grade are you in?', answer: "I'm in the third grade." },
-    { image: null, question: 'What grade are you in?', answer: "I'm in the fourth grade." },
+    { image: '/images/grade1.webp', question: 'What grade are you in?', answer: "I'm in the first grade." },
+    { image: '/images/grade2.webp', question: 'What grade are you in?', answer: "I'm in the second grade." },
+    { image: '/images/grade3.webp', question: 'What grade are you in?', answer: "I'm in the third grade." },
+    { image: '/images/grade4.webp', question: 'What grade are you in?', answer: "I'm in the fourth grade." },
+    { image: '/images/grade5.webp', question: 'What grade are you in?', answer: "I'm in the fifth grade." },
     { image: null, question: 'What grade are you in?', answer: "I'm in the sixth grade." },
   ],
   '2단원': [
