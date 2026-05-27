@@ -206,6 +206,50 @@ function CellImage({ src, alt, className, fallbackClass, fallbackEmoji = '💬' 
   return <img src={src} alt={alt} className={className} onError={() => setErr(true)} />;
 }
 
+// 문장을 단어 단위로 쪼개, 단어를 누르면 그 단어만 읽어주도록 렌더링
+function ClickableWords({ text, onWord }) {
+  return (
+    <>
+      {text.split(/(\s+)/).map((seg, i) => {
+        if (seg === '' || /^\s+$/.test(seg)) return <span key={i}>{seg}</span>;
+        const clean = seg.replace(/[^A-Za-z0-9'’]/g, '');
+        return (
+          <span
+            key={i}
+            onClick={(e) => { e.stopPropagation(); if (clean) onWord(clean); }}
+            className="cursor-pointer rounded px-0.5 hover:bg-yellow-200 transition-colors"
+            title="클릭하면 이 단어를 들려줘요"
+          >
+            {seg}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+// 대답 문장에서 핵심 단어(기능어 제외)를 빈칸으로 만들기 위한 분해
+const parseForBlanks = (answer) => {
+  const segs = [];
+  let blankIdx = 0;
+  answer.split(/(\s+)/).forEach((seg) => {
+    if (seg === '') return;
+    if (/^\s+$/.test(seg)) { segs.push({ type: 'space', text: seg }); return; }
+    const m = seg.match(/^([^A-Za-z0-9'’]*)([A-Za-z0-9'’]*)([^A-Za-z0-9'’]*)$/);
+    const pre = m ? m[1] : '';
+    const core = m ? m[2] : seg;
+    const post = m ? m[3] : '';
+    const norm = normWord(core);
+    if (core && norm && !STOPWORDS.has(norm)) {
+      segs.push({ type: 'blank', pre, core, post, norm, idx: blankIdx });
+      blankIdx++;
+    } else {
+      segs.push({ type: 'text', text: seg });
+    }
+  });
+  return segs;
+};
+
 export default function App() {
   const [board, setBoard] = useState(() => buildBoard());
   const [gameState, setGameState] = useState('lobby');
@@ -234,6 +278,9 @@ export default function App() {
   const [actionPopup, setActionPopup] = useState(null);
   const [catchEvent, setCatchEvent] = useState(null);
   const [previewCell, setPreviewCell] = useState(null); // 그림 클릭 시 문장 보여주기(연습용)
+  const [writeMode, setWriteMode] = useState(false); // 쓰기 활동(빈칸 채우기) 모드
+  const [writeInputs, setWriteInputs] = useState({}); // 빈칸별 입력값 {idx: value}
+  const [writeChecked, setWriteChecked] = useState(false); // 정답 확인 눌렀는지
 
   const [currentTask, setCurrentTask] = useState(null);
   const [isListening, setIsListening] = useState(false);
@@ -643,8 +690,40 @@ export default function App() {
     )
       return;
 
+    setWriteMode(false);
+    setWriteInputs({});
+    setWriteChecked(false);
     setPreviewCell(cell);
     speakText(`${cell.question} ... ${cell.answer}`);
+  };
+
+  const closePreview = () => {
+    setPreviewCell(null);
+    setWriteMode(false);
+    setWriteInputs({});
+    setWriteChecked(false);
+  };
+
+  const startWriting = () => {
+    setWriteInputs({});
+    setWriteChecked(false);
+    setWriteMode(true);
+  };
+
+  const checkWriting = () => {
+    setWriteChecked(true);
+    const blanks = parseForBlanks(previewCell.answer).filter((s) => s.type === 'blank');
+    const allCorrect = blanks.every((s) => normWord(writeInputs[s.idx] || '') === s.norm);
+    if (allCorrect) speakText('Excellent!');
+  };
+
+  const revealWriting = () => {
+    const next = {};
+    parseForBlanks(previewCell.answer).forEach((s) => {
+      if (s.type === 'blank') next[s.idx] = s.core;
+    });
+    setWriteInputs(next);
+    setWriteChecked(true);
   };
 
   const resetGame = () => {
@@ -663,6 +742,9 @@ export default function App() {
     setActionPopup(null);
     setCatchEvent(null);
     setPreviewCell(null);
+    setWriteMode(false);
+    setWriteInputs({});
+    setWriteChecked(false);
   };
 
   const handleModeChange = (mode) => {
@@ -969,15 +1051,15 @@ export default function App() {
       {previewCell && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-[80] p-4 backdrop-blur-sm"
-          onClick={() => setPreviewCell(null)}
+          onClick={closePreview}
         >
           <div
-            className="bg-white rounded-[2rem] p-6 md:p-10 max-w-lg w-full text-center shadow-2xl border-8 border-emerald-400 relative"
+            className="bg-white rounded-[2rem] p-6 md:p-10 max-w-lg w-full text-center shadow-2xl border-8 border-emerald-400 relative max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setPreviewCell(null)}
-              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-black text-xl flex items-center justify-center"
+              onClick={closePreview}
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-black text-xl flex items-center justify-center z-10"
             >
               ✕
             </button>
@@ -987,8 +1069,8 @@ export default function App() {
                 src={previewCell.image}
                 alt={previewCell.answer}
                 fallbackEmoji={previewCell.emoji}
-                className="w-28 h-28 object-contain drop-shadow-md mb-3"
-                fallbackClass="text-7xl drop-shadow-md mb-3"
+                className="w-24 h-24 object-contain drop-shadow-md mb-3"
+                fallbackClass="text-6xl drop-shadow-md mb-3"
               />
               <span
                 className={`inline-block text-sm font-black px-3 py-1 rounded-xl shadow-sm border-2 ${UNIT_COLORS[previewCell.unit] || 'text-emerald-700 bg-emerald-50 border-emerald-300'}`}
@@ -997,23 +1079,124 @@ export default function App() {
               </span>
             </div>
 
-            <div className="space-y-3 text-left">
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4">
-                <p className="text-xs font-black text-blue-500 uppercase tracking-wide mb-1">Question · 질문</p>
-                <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug">{previewCell.question}</p>
-              </div>
-              <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4">
-                <p className="text-xs font-black text-amber-600 uppercase tracking-wide mb-1">Answer · 대답</p>
-                <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug">{previewCell.answer}</p>
-              </div>
-            </div>
+            {!writeMode ? (
+              <>
+                <div className="space-y-3 text-left">
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4">
+                    <p className="text-xs font-black text-blue-500 uppercase tracking-wide mb-1">Question · 질문</p>
+                    <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug">
+                      <ClickableWords text={previewCell.question} onWord={(w) => speakText(w)} />
+                    </p>
+                  </div>
+                  <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4">
+                    <p className="text-xs font-black text-amber-600 uppercase tracking-wide mb-1">Answer · 대답</p>
+                    <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug">
+                      <ClickableWords text={previewCell.answer} onWord={(w) => speakText(w)} />
+                    </p>
+                  </div>
+                </div>
 
-            <button
-              onClick={() => speakText(`${previewCell.question} ... ${previewCell.answer}`)}
-              className="mt-6 px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(5,150,105,1)] active:shadow-none active:translate-y-1 transition-all"
-            >
-              🔊 다시 듣기
-            </button>
+                <p className="text-sm font-bold text-slate-500 mt-3">💡 단어를 누르면 그 단어만 들려줘요</p>
+
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  <button
+                    onClick={() => speakText(`${previewCell.question} ... ${previewCell.answer}`)}
+                    className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(5,150,105,1)] active:shadow-none active:translate-y-1 transition-all"
+                  >
+                    🔊 다시 듣기
+                  </button>
+                  <button
+                    onClick={startWriting}
+                    className="px-5 py-3 bg-violet-500 hover:bg-violet-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(124,58,237,1)] active:shadow-none active:translate-y-1 transition-all"
+                  >
+                    ✏️ 쓰기 활동
+                  </button>
+                </div>
+              </>
+            ) : (
+              (() => {
+                const segs = parseForBlanks(previewCell.answer);
+                const blanks = segs.filter((s) => s.type === 'blank');
+                const allCorrect =
+                  writeChecked && blanks.every((s) => normWord(writeInputs[s.idx] || '') === s.norm);
+                return (
+                  <>
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3 text-left mb-3">
+                      <p className="text-xs font-black text-blue-500 uppercase tracking-wide mb-1">Question · 질문</p>
+                      <p className="text-xl md:text-2xl font-black text-slate-800 leading-snug">
+                        <ClickableWords text={previewCell.question} onWord={(w) => speakText(w)} />
+                      </p>
+                    </div>
+
+                    <p className="text-base font-bold text-violet-700 mb-2">✏️ 빈칸에 알맞은 단어를 써보세요</p>
+
+                    <div className="bg-violet-50 border-2 border-violet-200 rounded-2xl p-4 text-left text-2xl md:text-3xl font-black text-slate-800 leading-relaxed">
+                      {segs.map((s, i) => {
+                        if (s.type !== 'blank') return <span key={i}>{s.text}</span>;
+                        const val = writeInputs[s.idx] || '';
+                        const ok = normWord(val) === s.norm;
+                        const border = writeChecked
+                          ? ok
+                            ? 'border-green-500 bg-green-50 text-green-700'
+                            : 'border-rose-400 bg-rose-50 text-rose-600'
+                          : 'border-violet-300 bg-white';
+                        return (
+                          <span key={i} className="inline-flex items-baseline">
+                            {s.pre}
+                            <input
+                              type="text"
+                              value={val}
+                              onChange={(e) =>
+                                setWriteInputs((prev) => ({ ...prev, [s.idx]: e.target.value }))
+                              }
+                              placeholder={'_'.repeat(Math.max(s.core.length, 3))}
+                              className={`mx-0.5 px-2 text-center border-b-4 rounded-md outline-none ${border}`}
+                              style={{ width: `${Math.max(s.core.length + 1, 4)}ch` }}
+                            />
+                            {s.post}
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    {writeChecked && (
+                      <div
+                        className={`mt-4 text-xl font-black py-3 px-4 rounded-xl border-2 ${allCorrect ? 'text-green-700 bg-green-100 border-green-300' : 'text-rose-600 bg-rose-50 border-rose-200'}`}
+                      >
+                        {allCorrect ? '잘했어요! 정답입니다 🎉' : '조금만 더! 빨간 칸을 다시 확인해보세요 ✍️'}
+                      </div>
+                    )}
+
+                    <div className="mt-5 flex flex-wrap justify-center gap-2">
+                      <button
+                        onClick={checkWriting}
+                        className="px-5 py-3 bg-green-500 hover:bg-green-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(22,163,74,1)] active:shadow-none active:translate-y-1 transition-all"
+                      >
+                        ✅ 정답 확인
+                      </button>
+                      <button
+                        onClick={revealWriting}
+                        className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(180,83,9,1)] active:shadow-none active:translate-y-1 transition-all"
+                      >
+                        👀 답 보기
+                      </button>
+                      <button
+                        onClick={() => { setWriteInputs({}); setWriteChecked(false); }}
+                        className="px-5 py-3 bg-slate-400 hover:bg-slate-300 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(100,116,139,1)] active:shadow-none active:translate-y-1 transition-all"
+                      >
+                        🔄 다시 쓰기
+                      </button>
+                      <button
+                        onClick={() => setWriteMode(false)}
+                        className="px-5 py-3 bg-white border-2 border-slate-300 text-slate-600 hover:bg-slate-50 rounded-full font-black text-lg transition-all"
+                      >
+                        ← 읽기로
+                      </button>
+                    </div>
+                  </>
+                );
+              })()
+            )}
           </div>
         </div>
       )}
