@@ -52,13 +52,18 @@ const SENTENCES_PER_UNIT = 6;
 // (원래 동물 게임과 동일한 구조 — 'content' 자리에만 표현이 들어갑니다)
 const BOARD_LAYOUT = [
   { type: 'start', label: 'START' },
-  ...Array(10).fill({ type: 'content' }),
+  ...Array(6).fill({ type: 'content' }),
+  { type: 'action', action: 'ladder', jump: 3, label: '사다리\n타기 🪜' },
+  ...Array(3).fill({ type: 'content' }),
   { type: 'action', action: 'forward2', label: '앞으로\n2칸 🚀' },
   ...Array(2).fill({ type: 'content' }),
+  { type: 'action', action: 'ladder', jump: 3, label: '사다리\n타기 🪜' },
   { type: 'action', action: 'rest', label: '한 번\n쉬기 💤' },
   ...Array(3).fill({ type: 'content' }),
   { type: 'action', action: 'back2', label: '뒤로\n2칸 🍌' },
-  ...Array(9).fill({ type: 'content' }),
+  ...Array(3).fill({ type: 'content' }),
+  { type: 'action', action: 'ladder', jump: 3, label: '사다리\n타기 🪜' },
+  ...Array(7).fill({ type: 'content' }),
   { type: 'finish', label: 'FINISH' },
 ];
 
@@ -498,6 +503,9 @@ export default function App() {
     if (action === 'forward2') {
       finalPos = Math.min(pos + 2, board.length - 1);
       animateMove(who, pos, finalPos);
+    } else if (action === 'ladder') {
+      finalPos = Math.min(pos + (board[pos]?.jump || 3), board.length - 1);
+      animateMove(who, pos, finalPos);
     } else if (action === 'back2') {
       finalPos = Math.max(pos - 2, 0);
       animateMove(who, pos, finalPos);
@@ -519,6 +527,12 @@ export default function App() {
         title: isMe ? '우와 신난다! 🚀' : '앗, AI가 빨라요! 🚀',
         desc: isMe ? '앞으로 2칸 더 전진합니다!' : 'AI가 앞으로 2칸 더 이동합니다!',
         color: 'text-green-600 bg-green-50 border-green-400',
+      };
+    } else if (action === 'ladder') {
+      return {
+        title: isMe ? '사다리 타고 쑥! 🪜' : 'AI가 사다리를 탔어요! 🪜',
+        desc: isMe ? '사다리를 타고 위로 올라갑니다!' : 'AI가 사다리를 타고 앞으로 이동합니다!',
+        color: 'text-amber-600 bg-amber-50 border-amber-400',
       };
     } else if (action === 'back2') {
       return {
@@ -961,7 +975,9 @@ export default function App() {
                 ? 'bg-blue-100 border-blue-300 shadow-[0_8px_0_0_#93c5fd,0_15px_10px_rgba(0,0,0,0.2)]'
                 : cell.action === 'forward2'
                   ? 'bg-green-100 border-green-300 shadow-[0_8px_0_0_#86efac,0_15px_10px_rgba(0,0,0,0.2)]'
-                  : 'bg-red-100 border-red-300 shadow-[0_8px_0_0_#fca5a5,0_15px_10px_rgba(0,0,0,0.2)]';
+                  : cell.action === 'ladder'
+                    ? 'bg-amber-100 border-amber-300 shadow-[0_8px_0_0_#fcd34d,0_15px_10px_rgba(0,0,0,0.2)]'
+                    : 'bg-red-100 border-red-300 shadow-[0_8px_0_0_#fca5a5,0_15px_10px_rgba(0,0,0,0.2)]';
             cellStyle = `${baseStyle} ${actionColor} border-[3px]`;
           }
 
@@ -1218,7 +1234,9 @@ export default function App() {
                 ? '🚀'
                 : getActionMessage()?.title.includes('🍌')
                   ? '🍌'
-                  : '💤'}
+                  : getActionMessage()?.title.includes('🪜')
+                    ? '🪜'
+                    : '💤'}
             </div>
             <h2 className="text-3xl font-black mb-4 drop-shadow-sm">{getActionMessage()?.title}</h2>
             <p className="text-xl font-bold text-gray-700 mb-8">{getActionMessage()?.desc}</p>
@@ -1230,7 +1248,9 @@ export default function App() {
                     ? 'bg-blue-500 border-b-8 border-blue-700'
                     : actionPopup.action === 'forward2'
                       ? 'bg-green-500 border-b-8 border-green-700'
-                      : 'bg-red-500 border-b-8 border-red-700'
+                      : actionPopup.action === 'ladder'
+                        ? 'bg-amber-500 border-b-8 border-amber-700'
+                        : 'bg-red-500 border-b-8 border-red-700'
                 }`}
             >
               알겠어요! 👍
