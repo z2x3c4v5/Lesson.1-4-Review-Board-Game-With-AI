@@ -183,6 +183,19 @@ const matchAggregate = (transcripts, required) => {
   return hit >= Math.ceil(words.length * 0.75);
 };
 
+// 여러 인식 후보 중 정답 핵심 단어와 가장 많이 맞는 후보를 고름(화면 표시용)
+const bestTranscript = (transcripts, required) => {
+  let best = transcripts[0];
+  let bestScore = -1;
+  transcripts.forEach((t) => {
+    const st = tokenize(t);
+    const sc = st.join('');
+    const score = required.filter((tok) => tokenMatches(tok, st, sc)).length;
+    if (score > bestScore) { bestScore = score; best = t; }
+  });
+  return best;
+};
+
 function CellImage({ src, alt, className, fallbackClass, fallbackEmoji = '💬' }) {
   const [err, setErr] = useState(false);
   if (!src || err) {
@@ -569,6 +582,8 @@ export default function App() {
         if (!required.includes(t)) required.push(t);
       });
     }
+
+    setSpokenText(bestTranscript(list, required)); // 정답과 가장 가까운 후보를 표시
 
     const isCorrect = required.length > 0 && matchAggregate(list, required);
 
