@@ -52,20 +52,23 @@ const SENTENCES_PER_UNIT = 6;
 // (원래 동물 게임과 동일한 구조 — 'content' 자리에만 표현이 들어갑니다)
 const BOARD_LAYOUT = [
   { type: 'start', label: 'START' },
-  ...Array(6).fill({ type: 'content' }),
-  { type: 'action', action: 'ladder', jump: 3, label: '사다리\n타기 🪜' },
-  ...Array(3).fill({ type: 'content' }),
+  ...Array(10).fill({ type: 'content' }),
   { type: 'action', action: 'forward2', label: '앞으로\n2칸 🚀' },
   ...Array(2).fill({ type: 'content' }),
-  { type: 'action', action: 'ladder', jump: 3, label: '사다리\n타기 🪜' },
   { type: 'action', action: 'rest', label: '한 번\n쉬기 💤' },
   ...Array(3).fill({ type: 'content' }),
   { type: 'action', action: 'back2', label: '뒤로\n2칸 🍌' },
-  ...Array(3).fill({ type: 'content' }),
-  { type: 'action', action: 'ladder', jump: 3, label: '사다리\n타기 🪜' },
-  ...Array(7).fill({ type: 'content' }),
+  ...Array(9).fill({ type: 'content' }),
   { type: 'finish', label: 'FINISH' },
 ];
+
+// 문장 칸에 붙는 사다리: { 출발칸id: 도착칸id } (위/아래 섞어서 배치)
+// 모든 칸은 일반(문장) 칸이며, 액션칸(11·14·18)·START(0)·FINISH(28)은 피함
+const LADDERS = {
+  3: 10, // 위로
+  13: 24, // 위로
+  22: 15, // 아래로
+};
 
 const UNIT_COLORS = {
   '1단원': 'text-rose-700 bg-rose-50 border-rose-300',
@@ -487,6 +490,12 @@ export default function App() {
       return;
     }
 
+    const ladderTo = LADDERS[pos];
+    if (cell.type === 'normal' && ladderTo !== undefined) {
+      setActionPopup({ action: 'ladder', who: who, pos: pos, to: ladderTo });
+      return;
+    }
+
     setIsMoving(false);
     if (who === 'player') {
       startSpeakingTask(cell);
@@ -504,7 +513,7 @@ export default function App() {
       finalPos = Math.min(pos + 2, board.length - 1);
       animateMove(who, pos, finalPos);
     } else if (action === 'ladder') {
-      finalPos = Math.min(pos + (board[pos]?.jump || 3), board.length - 1);
+      finalPos = Math.min(Math.max(actionPopup.to, 0), board.length - 1);
       animateMove(who, pos, finalPos);
     } else if (action === 'back2') {
       finalPos = Math.max(pos - 2, 0);
@@ -529,10 +538,17 @@ export default function App() {
         color: 'text-green-600 bg-green-50 border-green-400',
       };
     } else if (action === 'ladder') {
+      const up = actionPopup.to > actionPopup.pos;
       return {
-        title: isMe ? '사다리 타고 쑥! 🪜' : 'AI가 사다리를 탔어요! 🪜',
-        desc: isMe ? '사다리를 타고 위로 올라갑니다!' : 'AI가 사다리를 타고 앞으로 이동합니다!',
-        color: 'text-amber-600 bg-amber-50 border-amber-400',
+        title: up
+          ? isMe ? '사다리 타고 쑥! 🪜' : 'AI가 사다리로 쑥! 🪜'
+          : isMe ? '사다리 타고 주르륵! 🪜' : 'AI가 사다리로 내려가요! 🪜',
+        desc: up
+          ? `사다리를 타고 ${actionPopup.to}번 칸으로 올라갑니다!`
+          : `사다리를 타고 ${actionPopup.to}번 칸으로 내려갑니다!`,
+        color: up
+          ? 'text-amber-600 bg-amber-50 border-amber-400'
+          : 'text-orange-600 bg-orange-50 border-orange-400',
       };
     } else if (action === 'back2') {
       return {
@@ -975,9 +991,7 @@ export default function App() {
                 ? 'bg-blue-100 border-blue-300 shadow-[0_8px_0_0_#93c5fd,0_15px_10px_rgba(0,0,0,0.2)]'
                 : cell.action === 'forward2'
                   ? 'bg-green-100 border-green-300 shadow-[0_8px_0_0_#86efac,0_15px_10px_rgba(0,0,0,0.2)]'
-                  : cell.action === 'ladder'
-                    ? 'bg-amber-100 border-amber-300 shadow-[0_8px_0_0_#fcd34d,0_15px_10px_rgba(0,0,0,0.2)]'
-                    : 'bg-red-100 border-red-300 shadow-[0_8px_0_0_#fca5a5,0_15px_10px_rgba(0,0,0,0.2)]';
+                  : 'bg-red-100 border-red-300 shadow-[0_8px_0_0_#fca5a5,0_15px_10px_rgba(0,0,0,0.2)]';
             cellStyle = `${baseStyle} ${actionColor} border-[3px]`;
           }
 
@@ -1025,6 +1039,15 @@ export default function App() {
               {(cell.type === 'start' || cell.type === 'finish') && (
                 <div className="font-black text-xl md:text-2xl text-white tracking-wider drop-shadow-md bg-black/20 px-3 py-1 rounded-lg border border-white/30">
                   {cell.label}
+                </div>
+              )}
+
+              {LADDERS[idx] !== undefined && (
+                <div
+                  className={`absolute -bottom-3 left-1 md:left-2 h-6 md:h-7 px-1.5 rounded-full flex items-center gap-0.5 text-[10px] md:text-xs font-black shadow-[0_3px_0_0_rgba(0,0,0,0.25)] border-2 border-white z-20 ${LADDERS[idx] > idx ? 'bg-amber-400 text-amber-950' : 'bg-orange-400 text-orange-950'}`}
+                  title={`사다리: ${idx}번 → ${LADDERS[idx]}번 칸`}
+                >
+                  🪜{LADDERS[idx] > idx ? '⬆' : '⬇'}{LADDERS[idx]}
                 </div>
               )}
 
