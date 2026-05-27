@@ -280,7 +280,7 @@ export default function App() {
   const [previewCell, setPreviewCell] = useState(null); // 그림 클릭 시 문장 보여주기(연습용)
   const [writeMode, setWriteMode] = useState(false); // 쓰기 활동(빈칸 채우기) 모드
   const [writeInputs, setWriteInputs] = useState({}); // 빈칸별 입력값 {idx: value}
-  const [writeChecked, setWriteChecked] = useState(false); // 정답 확인 눌렀는지
+  const [writeRevealed, setWriteRevealed] = useState(false); // 답 보기 눌렀는지
 
   const [currentTask, setCurrentTask] = useState(null);
   const [isListening, setIsListening] = useState(false);
@@ -692,7 +692,7 @@ export default function App() {
 
     setWriteMode(false);
     setWriteInputs({});
-    setWriteChecked(false);
+    setWriteRevealed(false);
     setPreviewCell(cell);
     speakText(`${cell.question} ... ${cell.answer}`);
   };
@@ -701,29 +701,17 @@ export default function App() {
     setPreviewCell(null);
     setWriteMode(false);
     setWriteInputs({});
-    setWriteChecked(false);
+    setWriteRevealed(false);
   };
 
   const startWriting = () => {
     setWriteInputs({});
-    setWriteChecked(false);
+    setWriteRevealed(false);
     setWriteMode(true);
   };
 
-  const checkWriting = () => {
-    setWriteChecked(true);
-    const blanks = parseForBlanks(previewCell.answer).filter((s) => s.type === 'blank');
-    const allCorrect = blanks.every((s) => normWord(writeInputs[s.idx] || '') === s.norm);
-    if (allCorrect) speakText('Excellent!');
-  };
-
   const revealWriting = () => {
-    const next = {};
-    parseForBlanks(previewCell.answer).forEach((s) => {
-      if (s.type === 'blank') next[s.idx] = s.core;
-    });
-    setWriteInputs(next);
-    setWriteChecked(true);
+    setWriteRevealed(true);
   };
 
   const resetGame = () => {
@@ -744,7 +732,7 @@ export default function App() {
     setPreviewCell(null);
     setWriteMode(false);
     setWriteInputs({});
-    setWriteChecked(false);
+    setWriteRevealed(false);
   };
 
   const handleModeChange = (mode) => {
@@ -1116,9 +1104,6 @@ export default function App() {
             ) : (
               (() => {
                 const segs = parseForBlanks(previewCell.answer);
-                const blanks = segs.filter((s) => s.type === 'blank');
-                const allCorrect =
-                  writeChecked && blanks.every((s) => normWord(writeInputs[s.idx] || '') === s.norm);
                 return (
                   <>
                     <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3 text-left mb-3">
@@ -1134,12 +1119,6 @@ export default function App() {
                       {segs.map((s, i) => {
                         if (s.type !== 'blank') return <span key={i}>{s.text}</span>;
                         const val = writeInputs[s.idx] || '';
-                        const ok = normWord(val) === s.norm;
-                        const border = writeChecked
-                          ? ok
-                            ? 'border-green-500 bg-green-50 text-green-700'
-                            : 'border-rose-400 bg-rose-50 text-rose-600'
-                          : 'border-violet-300 bg-white';
                         return (
                           <span key={i} className="inline-flex items-baseline">
                             {s.pre}
@@ -1150,7 +1129,7 @@ export default function App() {
                                 setWriteInputs((prev) => ({ ...prev, [s.idx]: e.target.value }))
                               }
                               placeholder={'_'.repeat(Math.max(s.core.length, 3))}
-                              className={`mx-0.5 px-2 text-center border-b-4 rounded-md outline-none ${border}`}
+                              className="mx-0.5 px-2 text-center border-b-4 border-violet-300 bg-white rounded-md outline-none focus:border-violet-500"
                               style={{ width: `${Math.max(s.core.length + 1, 4)}ch` }}
                             />
                             {s.post}
@@ -1159,21 +1138,27 @@ export default function App() {
                       })}
                     </div>
 
-                    {writeChecked && (
-                      <div
-                        className={`mt-4 text-xl font-black py-3 px-4 rounded-xl border-2 ${allCorrect ? 'text-green-700 bg-green-100 border-green-300' : 'text-rose-600 bg-rose-50 border-rose-200'}`}
-                      >
-                        {allCorrect ? '잘했어요! 정답입니다 🎉' : '조금만 더! 빨간 칸을 다시 확인해보세요 ✍️'}
+                    {writeRevealed && (
+                      <div className="mt-4 bg-green-50 border-2 border-green-300 rounded-2xl p-4 text-left">
+                        <p className="text-xs font-black text-green-600 uppercase tracking-wide mb-1">정답</p>
+                        <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug">
+                          {segs.map((s, i) =>
+                            s.type !== 'blank' ? (
+                              <span key={i}>{s.text}</span>
+                            ) : (
+                              <span key={i}>
+                                {s.pre}
+                                <span className="text-green-700 underline decoration-green-400 decoration-4">{s.core}</span>
+                                {s.post}
+                              </span>
+                            )
+                          )}
+                        </p>
+                        <p className="text-sm font-bold text-green-600 mt-2">내가 쓴 답과 비교해보세요 🙂</p>
                       </div>
                     )}
 
                     <div className="mt-5 flex flex-wrap justify-center gap-2">
-                      <button
-                        onClick={checkWriting}
-                        className="px-5 py-3 bg-green-500 hover:bg-green-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(22,163,74,1)] active:shadow-none active:translate-y-1 transition-all"
-                      >
-                        ✅ 정답 확인
-                      </button>
                       <button
                         onClick={revealWriting}
                         className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(180,83,9,1)] active:shadow-none active:translate-y-1 transition-all"
@@ -1181,7 +1166,7 @@ export default function App() {
                         👀 답 보기
                       </button>
                       <button
-                        onClick={() => { setWriteInputs({}); setWriteChecked(false); }}
+                        onClick={() => { setWriteInputs({}); setWriteRevealed(false); }}
                         className="px-5 py-3 bg-slate-400 hover:bg-slate-300 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(100,116,139,1)] active:shadow-none active:translate-y-1 transition-all"
                       >
                         🔄 다시 쓰기
