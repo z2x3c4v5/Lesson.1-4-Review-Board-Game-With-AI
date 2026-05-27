@@ -547,9 +547,9 @@ export default function App() {
       mode: gameMode,
     });
 
-    if (gameMode === 'qna') {
-      setTimeout(() => speakText('그림을 보고 질문과 대답을 만들어보세요!'), 500);
-    } else {
+    // qna 모드는 학생이 스스로 질문/대답을 만들어야 하므로 자동 음성을 재생하지 않음
+    // (한국어 안내를 영어 엔진으로 읽어 이상하게 들리던 문제 제거 — 필요하면 '들어보며 연습' 버튼 사용)
+    if (gameMode !== 'qna') {
       setTimeout(() => speakText(cell.question), 500);
     }
   };
