@@ -140,13 +140,47 @@ const tokenize = (str) => str.replace(/['’`]/g, '').split(/[^a-zA-Z0-9]+/).map
 
 const contentTokens = (str) => [...new Set(tokenize(str).filter((t) => !STOPWORDS.has(t)))];
 
-const matchTokens = (transcript, required) => {
-  const spokenToks = tokenize(transcript);
-  const spokenConcat = spokenToks.join('');
-  return required.every((tok) => {
-    if (/^\d+$/.test(tok)) return spokenToks.includes(tok); // 숫자(날짜·학년)는 정확히 일치
-    return spokenConcat.includes(tok) || spokenToks.some((st) => st.length >= 3 && tok.startsWith(st));
+// 두 단어의 편집 거리(발음 오인식·오타 허용용)
+const lev = (a, b) => {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[n];
+};
+
+// 정답의 핵심 단어 하나가 학생 발화에 (대략) 들어 있는지 판정
+const tokenMatches = (tok, spokenToks, spokenConcat) => {
+  if (/^\d+$/.test(tok)) return spokenToks.includes(tok); // 숫자(학년·날짜)는 정확히 일치
+  if (spokenConcat.includes(tok)) return true;
+  return spokenToks.some((st) => {
+    if (st.length >= 3 && (tok.startsWith(st) || st.startsWith(tok))) return true;
+    const thr = tok.length <= 5 ? 1 : 2; // 짧은 단어는 1글자, 긴 단어는 2글자까지 차이 허용
+    return lev(st, tok) <= thr;
   });
+};
+
+// 여러 인식 후보를 모두 합쳐서 정답 핵심 단어가 충분히 들어 있으면 통과
+//  · 숫자(학년·날짜)는 모두 정확히 일치해야 함
+//  · 나머지 핵심 단어는 75% 이상 맞으면 통과(발음/오인식 한두 개는 허용)
+const matchAggregate = (transcripts, required) => {
+  let spokenToks = [];
+  transcripts.forEach((t) => { spokenToks = spokenToks.concat(tokenize(t)); });
+  const spokenConcat = spokenToks.join('');
+  const nums = required.filter((t) => /^\d+$/.test(t));
+  const words = required.filter((t) => !/^\d+$/.test(t));
+  if (!nums.every((t) => tokenMatches(t, spokenToks, spokenConcat))) return false;
+  if (words.length === 0) return true;
+  const hit = words.filter((t) => tokenMatches(t, spokenToks, spokenConcat)).length;
+  return hit >= Math.ceil(words.length * 0.75);
 };
 
 function CellImage({ src, alt, className, fallbackClass, fallbackEmoji = '💬' }) {
@@ -481,6 +515,7 @@ export default function App() {
     recognition.continuous = false;
     recognition.lang = 'en-US';
     recognition.interimResults = false;
+    recognition.maxAlternatives = 5; // 여러 인식 후보를 받아 통과율을 높임
 
     recognition.onstart = () => {
       isListeningRef.current = true;
@@ -488,9 +523,11 @@ export default function App() {
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setSpokenText(transcript);
-      checkAnswerRef(transcript, currentTaskRef.current);
+      const result = event.results[0];
+      const transcripts = [];
+      for (let i = 0; i < result.length; i++) transcripts.push(result[i].transcript);
+      setSpokenText(transcripts[0]);
+      checkAnswerRef(transcripts, currentTaskRef.current);
     };
 
     recognition.onerror = (event) => {
@@ -522,8 +559,9 @@ export default function App() {
     }
   };
 
-  const checkAnswerRef = (transcript, task) => {
+  const checkAnswerRef = (transcripts, task) => {
     if (!task) return;
+    const list = Array.isArray(transcripts) ? transcripts : [transcripts];
 
     const required = contentTokens(task.answer);
     if (task.mode === 'qna') {
@@ -532,7 +570,7 @@ export default function App() {
       });
     }
 
-    const isCorrect = required.length > 0 && matchTokens(transcript, required);
+    const isCorrect = required.length > 0 && matchAggregate(list, required);
 
     if (isCorrect) {
       setFeedback('Excellent! 정답입니다! 🎉 (AI 턴으로 넘어갑니다)');
@@ -542,7 +580,7 @@ export default function App() {
         setTurn('ai');
       }, 2500);
     } else {
-      setFeedback(`앗, 다시 해볼까요? (인식된 말: ${transcript})`);
+      setFeedback(`앗, 다시 해볼까요? (인식된 말: ${list[0]})`);
     }
   };
 
