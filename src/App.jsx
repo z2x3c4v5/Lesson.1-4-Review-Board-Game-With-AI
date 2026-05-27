@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // =================================================================
 //  ✏️ 여기만 채우면 됩니다 — 단원별 표현 + 이미지
@@ -61,16 +61,6 @@ const BOARD_LAYOUT = [
   ...Array(9).fill({ type: 'content' }),
   { type: 'finish', label: 'FINISH' },
 ];
-
-// 문장 칸에 붙는 사다리: { 출발칸id: 도착칸id } (위/아래 섞어서 배치)
-// 모든 칸은 일반(문장) 칸이며, 액션칸(11·14·18)·START(0)·FINISH(28)은 피함
-// 여러 줄 건너 대각선으로 연결해 사다리가 길고 크게 보이도록 함
-// (출발·도착 모두 일반칸, 액션칸 11·14·18 / START 0 / FINISH 28 회피)
-const LADDERS = {
-  3: 16, // 앞으로 (대각선)
-  6: 19, // 앞으로 (대각선)
-  25: 12, // 뒤로 (대각선)
-};
 
 const UNIT_COLORS = {
   '1단원': 'text-rose-700 bg-rose-50 border-rose-300',
@@ -260,34 +250,6 @@ const parseForBlanks = (answer) => {
   return segs;
 };
 
-// 두 칸 중심(x1,y1)-(x2,y2)을 잇는 사다리 모양(레일 2개 + 가로살)을 SVG로 그림
-const renderLadderShape = (l, i) => {
-  const { x1, y1, x2, y2 } = l;
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const len = Math.hypot(dx, dy) || 1;
-  const nx = -(dy / len);
-  const ny = dx / len;
-  const w = 12; // 레일 간격(절반)
-  const count = Math.max(3, Math.round(len / 22));
-  const rungs = [];
-  for (let k = 0; k <= count; k++) {
-    const t = k / count;
-    const cx = x1 + dx * t;
-    const cy = y1 + dy * t;
-    rungs.push([cx + nx * w, cy + ny * w, cx - nx * w, cy - ny * w]);
-  }
-  return (
-    <g key={i} strokeLinecap="round">
-      <line x1={x1 + nx * w} y1={y1 + ny * w} x2={x2 + nx * w} y2={y2 + ny * w} stroke="#b45309" strokeWidth="6" />
-      <line x1={x1 - nx * w} y1={y1 - ny * w} x2={x2 - nx * w} y2={y2 - ny * w} stroke="#b45309" strokeWidth="6" />
-      {rungs.map((r, ri) => (
-        <line key={ri} x1={r[0]} y1={r[1]} x2={r[2]} y2={r[3]} stroke="#d97706" strokeWidth="4" />
-      ))}
-    </g>
-  );
-};
-
 export default function App() {
   const [board, setBoard] = useState(() => buildBoard());
   const [gameState, setGameState] = useState('lobby');
@@ -320,11 +282,6 @@ export default function App() {
   const [writeInputs, setWriteInputs] = useState({}); // 빈칸별 입력값 {idx: value}
   const [writeRevealed, setWriteRevealed] = useState(false); // 답 보기 눌렀는지
 
-  // 사다리 그림(칸과 칸을 잇는 선)을 그리기 위한 위치 측정
-  const boardRef = useRef(null);
-  const cellRefs = useRef({});
-  const [ladderLines, setLadderLines] = useState([]);
-
   const [currentTask, setCurrentTask] = useState(null);
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState('');
@@ -339,39 +296,6 @@ export default function App() {
   useEffect(() => {
     currentTaskRef.current = currentTask;
   }, [currentTask]);
-
-  // 사다리로 연결된 두 칸의 화면 위치를 측정해 사다리 선 좌표를 계산
-  useLayoutEffect(() => {
-    const compute = () => {
-      const boardEl = boardRef.current;
-      if (!boardEl) return;
-      const base = boardEl.getBoundingClientRect();
-      const lines = [];
-      Object.entries(LADDERS).forEach(([from, to]) => {
-        const a = cellRefs.current[from];
-        const b = cellRefs.current[to];
-        if (!a || !b) return;
-        const ra = a.getBoundingClientRect();
-        const rb = b.getBoundingClientRect();
-        lines.push({
-          x1: ra.left + ra.width / 2 - base.left,
-          y1: ra.top + ra.height / 2 - base.top,
-          x2: rb.left + rb.width / 2 - base.left,
-          y2: rb.top + rb.height / 2 - base.top,
-          up: Number(to) > Number(from),
-        });
-      });
-      setLadderLines(lines);
-    };
-    compute();
-    const ro = new ResizeObserver(compute);
-    if (boardRef.current) ro.observe(boardRef.current);
-    window.addEventListener('resize', compute);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', compute);
-    };
-  }, [board, gameState]);
 
   const speakText = (text, rate = 0.8) => {
     if ('speechSynthesis' in window) {
@@ -558,12 +482,6 @@ export default function App() {
       return;
     }
 
-    const ladderTo = LADDERS[pos];
-    if (cell.type === 'normal' && ladderTo !== undefined) {
-      setActionPopup({ action: 'ladder', who: who, pos: pos, to: ladderTo });
-      return;
-    }
-
     setIsMoving(false);
     if (who === 'player') {
       startSpeakingTask(cell);
@@ -579,9 +497,6 @@ export default function App() {
     let finalPos = pos;
     if (action === 'forward2') {
       finalPos = Math.min(pos + 2, board.length - 1);
-      animateMove(who, pos, finalPos);
-    } else if (action === 'ladder') {
-      finalPos = Math.min(Math.max(actionPopup.to, 0), board.length - 1);
       animateMove(who, pos, finalPos);
     } else if (action === 'back2') {
       finalPos = Math.max(pos - 2, 0);
@@ -604,19 +519,6 @@ export default function App() {
         title: isMe ? '우와 신난다! 🚀' : '앗, AI가 빨라요! 🚀',
         desc: isMe ? '앞으로 2칸 더 전진합니다!' : 'AI가 앞으로 2칸 더 이동합니다!',
         color: 'text-green-600 bg-green-50 border-green-400',
-      };
-    } else if (action === 'ladder') {
-      const forward = actionPopup.to > actionPopup.pos;
-      return {
-        title: forward
-          ? isMe ? '사다리 타고 쑥! 🪜' : 'AI가 사다리로 쑥! 🪜'
-          : isMe ? '앗, 사다리로 뒤로! 🪜' : 'AI가 사다리로 뒤로! 🪜',
-        desc: forward
-          ? `사다리를 타고 ${actionPopup.to}번 칸으로 앞서 갑니다!`
-          : `사다리를 타고 ${actionPopup.to}번 칸으로 돌아갑니다!`,
-        color: forward
-          ? 'text-amber-600 bg-amber-50 border-amber-400'
-          : 'text-orange-600 bg-orange-50 border-orange-400',
       };
     } else if (action === 'back2') {
       return {
@@ -1030,7 +932,6 @@ export default function App() {
       )}
 
       <div
-        ref={boardRef}
         className={`w-full max-w-6xl p-8 md:p-14 rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] flex flex-wrap gap-4 md:gap-5 justify-center relative z-10 border-[16px] border-[#4a2e15] bg-[#e8dcc4] overflow-hidden ${gameState === 'lobby' ? 'mb-24' : ''}`}
       >
         <div className="absolute inset-0 pointer-events-none opacity-20 z-0">
@@ -1039,11 +940,6 @@ export default function App() {
         </div>
 
         <div className="absolute inset-0 pointer-events-none opacity-[0.04] z-0 bg-[radial-gradient(#000_2px,transparent_2px)] [background-size:20px_20px]"></div>
-
-        {/* 칸과 칸을 잇는 사다리 그림 (칸 위에 반투명하게 얹어 통째로 보이게) */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 15, opacity: 0.7 }}>
-          {ladderLines.map((l, i) => renderLadderShape(l, i))}
-        </svg>
 
         {board.map((cell, idx) => {
           const isPlayerHere = playerPos === idx;
@@ -1070,12 +966,7 @@ export default function App() {
           }
 
           return (
-            <div
-              key={idx}
-              ref={(el) => { cellRefs.current[idx] = el; }}
-              className={cellStyle}
-              onClick={() => handleCellClick(cell)}
-            >
+            <div key={idx} className={cellStyle} onClick={() => handleCellClick(cell)}>
               <div className="absolute -top-4 -left-2 md:-top-6 md:-left-4 flex gap-1 z-30 w-full px-1">
                 {isPlayerHere && (
                   <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-blue-400 to-blue-700 rounded-full border-[3px] border-white shadow-[0_8px_10px_rgba(0,0,0,0.5),inset_0_4px_4px_rgba(255,255,255,0.4)] flex items-center justify-center text-2xl md:text-3xl animate-bounce z-40">
@@ -1327,9 +1218,7 @@ export default function App() {
                 ? '🚀'
                 : getActionMessage()?.title.includes('🍌')
                   ? '🍌'
-                  : getActionMessage()?.title.includes('🪜')
-                    ? '🪜'
-                    : '💤'}
+                  : '💤'}
             </div>
             <h2 className="text-3xl font-black mb-4 drop-shadow-sm">{getActionMessage()?.title}</h2>
             <p className="text-xl font-bold text-gray-700 mb-8">{getActionMessage()?.desc}</p>
@@ -1341,9 +1230,7 @@ export default function App() {
                     ? 'bg-blue-500 border-b-8 border-blue-700'
                     : actionPopup.action === 'forward2'
                       ? 'bg-green-500 border-b-8 border-green-700'
-                      : actionPopup.action === 'ladder'
-                        ? 'bg-amber-500 border-b-8 border-amber-700'
-                        : 'bg-red-500 border-b-8 border-red-700'
+                      : 'bg-red-500 border-b-8 border-red-700'
                 }`}
             >
               알겠어요! 👍
