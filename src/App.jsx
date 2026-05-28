@@ -1348,12 +1348,12 @@ export default function App() {
                     </div>
 
                     {writeRevealed && (
-                      <div className="mt-4 bg-green-50 border-2 border-green-300 rounded-2xl p-4 text-left">
-                        <p className="text-xs font-black text-green-600 uppercase tracking-wide mb-1">정답</p>
-                        <p className="text-xl md:text-2xl font-black text-slate-800 leading-snug">{previewCell.question}</p>
-                        <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug mt-1">
-                          {answerSegs.map((s, i) => renderSeg(s, i, true))}
-                        </p>
+                      <div className="mt-4 bg-green-50 border-2 border-green-300 rounded-2xl p-3 text-left">
+                        <p className="text-xs font-black text-green-600 uppercase tracking-wide mb-2">정답</p>
+                        <div className="bg-white border border-green-200 rounded-xl px-3 text-2xl md:text-3xl font-black text-slate-800 eng-paper">
+                          <p>{previewCell.question}</p>
+                          <p>{answerSegs.map((s, i) => renderSeg(s, i, true))}</p>
+                        </div>
                       </div>
                     )}
 
