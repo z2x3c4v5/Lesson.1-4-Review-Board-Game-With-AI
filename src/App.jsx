@@ -1117,7 +1117,7 @@ export default function App() {
       )}
 
       <div
-        className={`w-full max-w-6xl p-8 md:p-14 rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] flex flex-wrap gap-4 md:gap-5 justify-center relative z-10 border-[16px] border-[#4a2e15] bg-[#e8dcc4] overflow-hidden ${gameState === 'lobby' ? 'mb-24' : ''}`}
+        className={`w-full max-w-6xl p-8 md:p-14 rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] grid grid-cols-3 md:grid-cols-6 gap-4 md:gap-5 relative z-10 border-[16px] border-[#4a2e15] bg-[#e8dcc4] overflow-hidden ${gameState === 'lobby' ? 'mb-24' : ''}`}
       >
         <div className="absolute inset-0 pointer-events-none opacity-20 z-0">
           <div className="absolute top-1/2 left-0 w-full h-[3px] bg-[#4a2e15]"></div>
@@ -1131,7 +1131,7 @@ export default function App() {
           const isAiHere = aiPos === idx;
 
           let baseStyle =
-            'w-28 h-32 md:w-[164px] md:h-[184px] rounded-2xl flex flex-col items-center justify-center relative transform transition-all duration-300 hover:-translate-y-2 z-10 group';
+            'w-full h-32 md:h-[184px] rounded-2xl flex flex-col items-center justify-center relative transform transition-all duration-300 hover:-translate-y-2 z-10 group';
           let cellStyle = '';
 
           if (cell.type === 'normal') {
