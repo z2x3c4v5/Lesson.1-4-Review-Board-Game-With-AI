@@ -309,6 +309,19 @@ const pickRandomBlanks = (segs, count) => {
   return new Set(shuffleArr(idxs).slice(0, count));
 };
 
+// 보드에서 단원별 2개씩 (총 8개) 쓰기 활동 칸을 무작위로 뽑음
+const pickWritingCells = (board, perUnit = 2) => {
+  const units = ['1단원', '2단원', '3단원', '4단원'];
+  const out = new Set();
+  units.forEach((u) => {
+    const ids = board
+      .filter((c) => c.type === 'normal' && c.unit === u)
+      .map((c) => c.id);
+    shuffleArr(ids).slice(0, perUnit).forEach((id) => out.add(id));
+  });
+  return out;
+};
+
 export default function App() {
   const [board, setBoard] = useState(() => buildBoard());
   const [gameState, setGameState] = useState('lobby');
@@ -342,6 +355,7 @@ export default function App() {
   const [writeRevealed, setWriteRevealed] = useState(false); // 답 보기 눌렀는지
   const [blankSet, setBlankSet] = useState(null); // 쓰기 모드에서 실제 빈칸으로 만들 idx Set
   const [boardWritingMode, setBoardWritingMode] = useState(false); // 헤더 쓰기 활동(보드 칸 강조)
+  const [writingCellIds, setWritingCellIds] = useState(() => new Set()); // 쓰기 활동 대상 칸 id 집합
   const [attemptCount, setAttemptCount] = useState(0); // 말하기 시도 횟수(3번 후 자동 통과)
 
   const [currentTask, setCurrentTask] = useState(null);
@@ -777,12 +791,13 @@ export default function App() {
     setWriteRevealed(false);
     setPreviewCell(cell);
 
-    if (boardWritingMode) {
-      // 헤더 쓰기 활동 모드: 바로 빈칸 채우기로 열기 (자동 음성 X)
+    if (boardWritingMode && writingCellIds.has(cell.id)) {
+      // 헤더 쓰기 활동 모드 + 쓰기 대상 칸: 바로 빈칸 채우기로 열기 (자동 음성 X)
       const segs = parseForBlanks(cell.answer);
       setBlankSet(pickRandomBlanks(segs, 2));
       setWriteMode(true);
     } else {
+      // 쓰기 모드여도 쓰기 대상 칸이 아니면 평소처럼 듣기/연습 팝업
       setWriteMode(false);
       setBlankSet(null);
       speakText(`${cell.question} ... ${cell.answer}`);
@@ -840,7 +855,18 @@ export default function App() {
     setWriteRevealed(false);
     setBlankSet(null);
     setBoardWritingMode(false);
+    setWritingCellIds(new Set());
     setAttemptCount(0);
+  };
+
+  const toggleBoardWriting = () => {
+    if (boardWritingMode) {
+      setBoardWritingMode(false);
+      setWritingCellIds(new Set());
+    } else {
+      setWritingCellIds(pickWritingCells(board, 2));
+      setBoardWritingMode(true);
+    }
   };
 
   const handleModeChange = (mode) => {
@@ -1009,7 +1035,7 @@ export default function App() {
           </div>
 
           <button
-            onClick={() => setBoardWritingMode((v) => !v)}
+            onClick={toggleBoardWriting}
             className={`px-5 py-2 rounded-xl font-bold transition-all whitespace-nowrap shadow-[0_4px_0_0_rgba(124,58,237,1)] active:shadow-[0_0px_0_0_rgba(124,58,237,1)] active:translate-y-1 ${boardWritingMode ? 'bg-violet-600 text-white' : 'bg-violet-500 hover:bg-violet-400 text-white'}`}
           >
             {boardWritingMode ? '✏️ 쓰기 활동 끄기' : '✏️ 쓰기 활동'}
@@ -1027,7 +1053,7 @@ export default function App() {
       {boardWritingMode && (
         <div className="w-full max-w-5xl bg-violet-100 border-4 border-violet-400 p-3 rounded-2xl mb-4 text-center z-10 animate-pulse">
           <p className="text-base md:text-lg font-black text-violet-800">
-            ✏️ 쓰기 활동 중 — 보드의 보랏빛 칸을 누르면 빈칸 채우기가 열려요
+            ✏️ 쓰기 활동 — 단원별 2개씩, 총 <span className="text-violet-900">8개 칸</span>에 표시된 ✏️ 쓰기 칸을 눌러보세요
           </p>
         </div>
       )}
@@ -1109,9 +1135,10 @@ export default function App() {
           let cellStyle = '';
 
           if (cell.type === 'normal') {
-            const writingHi = boardWritingMode
-              ? ' bg-violet-50 border-violet-400 writing-glow ring-2 ring-violet-300'
-              : '';
+            const writingHi =
+              boardWritingMode && writingCellIds.has(idx)
+                ? ' bg-violet-50 border-violet-400 writing-glow ring-2 ring-violet-300'
+                : '';
             cellStyle = `${baseStyle} bg-[#fdfbf7] border-[3px] border-[#d4bca3] shadow-[0_8px_0_0_#bca38f,0_15px_10px_rgba(0,0,0,0.2)] cursor-pointer hover:border-emerald-400 hover:shadow-[0_8px_0_0_#10b981,0_15px_10px_rgba(0,0,0,0.2)]${writingHi}`;
           } else if (cell.type === 'start') {
             cellStyle = `${baseStyle} bg-gradient-to-b from-amber-200 to-amber-400 border-[3px] border-amber-500 shadow-[0_8px_0_0_#b45309,0_15px_10px_rgba(0,0,0,0.2)]`;
@@ -1144,7 +1171,7 @@ export default function App() {
 
               {cell.type === 'normal' && (
                 <>
-                  {boardWritingMode && (
+                  {boardWritingMode && writingCellIds.has(idx) && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30 bg-violet-600 text-white text-xs md:text-sm font-black px-3 py-1 rounded-full shadow-[0_3px_0_0_rgba(76,29,149,1)] border-2 border-white whitespace-nowrap animate-bounce">
                       ✏️ 쓰기
                     </div>
