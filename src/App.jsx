@@ -1144,6 +1144,11 @@ export default function App() {
 
               {cell.type === 'normal' && (
                 <>
+                  {boardWritingMode && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30 bg-violet-600 text-white text-xs md:text-sm font-black px-3 py-1 rounded-full shadow-[0_3px_0_0_rgba(76,29,149,1)] border-2 border-white whitespace-nowrap animate-bounce">
+                      ✏️ 쓰기
+                    </div>
+                  )}
                   <div className="absolute top-2 right-2 text-sm bg-gray-200/50 rounded-full w-6 h-6 flex items-center justify-center opacity-40 hover:opacity-100 hover:bg-emerald-100 transition-all">
                     🔊
                   </div>
