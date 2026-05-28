@@ -870,8 +870,8 @@ export default function App() {
   };
 
   const handleModeChange = (mode) => {
+    // 모드만 바꾸고 보드 순서/진행 상태는 유지(원치 않는 재배치 방지)
     setGameMode(mode);
-    resetGame();
   };
 
   const renderDots = (num) => {
