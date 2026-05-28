@@ -1131,7 +1131,7 @@ export default function App() {
           const isAiHere = aiPos === idx;
 
           let baseStyle =
-            'w-24 h-28 md:w-[148px] md:h-[168px] rounded-2xl flex flex-col items-center justify-center relative transform transition-all duration-300 hover:-translate-y-2 z-10 group';
+            'w-28 h-32 md:w-[164px] md:h-[184px] rounded-2xl flex flex-col items-center justify-center relative transform transition-all duration-300 hover:-translate-y-2 z-10 group';
           let cellStyle = '';
 
           if (cell.type === 'normal') {
@@ -1183,8 +1183,8 @@ export default function App() {
                     src={cell.image}
                     alt={cell.answer}
                     fallbackEmoji={cell.emoji}
-                    className="w-16 h-16 md:w-[104px] md:h-[104px] object-contain mb-1 drop-shadow-md transform transition-transform group-hover:scale-110"
-                    fallbackClass="text-5xl md:text-7xl mb-1 drop-shadow-md transform transition-transform group-hover:scale-110"
+                    className="w-20 h-20 md:w-[128px] md:h-[128px] object-contain mb-1 drop-shadow-md transform transition-transform group-hover:scale-110"
+                    fallbackClass="text-6xl md:text-8xl mb-1 drop-shadow-md transform transition-transform group-hover:scale-110"
                   />
                   <div
                     className={`text-[10px] md:text-xs font-black border-2 px-2 py-0.5 rounded-full shadow-inner mt-1 ${UNIT_COLORS[cell.unit] || 'text-[#5c3a21] bg-[#e8dcc4] border-[#d4bca3]'}`}
