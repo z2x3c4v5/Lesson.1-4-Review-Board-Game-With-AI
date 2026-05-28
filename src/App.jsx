@@ -948,35 +948,16 @@ export default function App() {
       <style>{`
         @import url('https://hangeul.pstatic.net/hangeul_static/css/nanum-square-round.css');
 
-        /* 영어 4선 공책 배경: 한 줄(56px)마다 회색 윗줄·파란 가운데줄·빨간 기준선·회색 아랫줄 반복 */
+        /* 영어 4선 공책: SVG로 정확한 4선(회색 위/점선 가운데/빨강 기준선/회색 아래) 반복 */
         .eng-paper {
+          background-color: #ffffff;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 100 56'%3E%3Cline x1='0' y1='8' x2='100' y2='8' stroke='%23475569' stroke-opacity='0.6' stroke-width='1'/%3E%3Cline x1='0' y1='26' x2='100' y2='26' stroke='%2364748b' stroke-opacity='0.6' stroke-width='1' stroke-dasharray='4 3'/%3E%3Cline x1='0' y1='44' x2='100' y2='44' stroke='%23dc2626' stroke-opacity='0.85' stroke-width='2'/%3E%3Cline x1='0' y1='54' x2='100' y2='54' stroke='%23475569' stroke-opacity='0.4' stroke-width='1'/%3E%3C/svg%3E");
+          background-size: 100% 56px;
+          background-repeat: repeat-y;
           line-height: 56px;
-          padding-top: 8px;
-          padding-bottom: 8px;
-          background-image:
-            repeating-linear-gradient(
-              to bottom,
-              transparent 0,
-              transparent 8px,
-              rgba(148,163,184,0.5) 8px, rgba(148,163,184,0.5) 9px,
-              transparent 9px,
-              transparent 26px,
-              rgba(59,130,246,0.45) 26px, rgba(59,130,246,0.45) 27px,
-              transparent 27px,
-              transparent 46px,
-              rgba(220,38,38,0.65) 46px, rgba(220,38,38,0.65) 48px,
-              transparent 48px,
-              transparent 56px
-            );
+          padding: 4px 10px 8px;
         }
-        .eng-blank {
-          line-height: 1;
-          height: 38px;
-          border: none;
-          border-bottom: 4px solid #a78bfa;
-          border-radius: 0;
-        }
-        .eng-blank:focus { border-bottom-color: #7c3aed; }
+        .eng-paper p { margin: 0; }
 
         @keyframes writing-glow {
           0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.6); }
