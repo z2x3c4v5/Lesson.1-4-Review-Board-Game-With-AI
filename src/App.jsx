@@ -339,7 +339,6 @@ export default function App() {
   const [previewCell, setPreviewCell] = useState(null); // 그림 클릭 시 문장 보여주기(연습용)
   const [wordHint, setWordHint] = useState(null); // 단어 클릭 시 영어·뜻 표시
   const [writeMode, setWriteMode] = useState(false); // 쓰기 활동(빈칸 채우기) 모드
-  const [writeInputs, setWriteInputs] = useState({}); // 빈칸별 입력값 {idx: value}
   const [writeRevealed, setWriteRevealed] = useState(false); // 답 보기 눌렀는지
   const [blankSet, setBlankSet] = useState(null); // 쓰기 모드에서 실제 빈칸으로 만들 idx Set
   const [boardWritingMode, setBoardWritingMode] = useState(false); // 헤더 쓰기 활동(보드 칸 강조)
@@ -775,7 +774,6 @@ export default function App() {
       return;
 
     setWordHint(null);
-    setWriteInputs({});
     setWriteRevealed(false);
     setPreviewCell(cell);
 
@@ -795,13 +793,11 @@ export default function App() {
     setPreviewCell(null);
     setWordHint(null);
     setWriteMode(false);
-    setWriteInputs({});
     setWriteRevealed(false);
     setBlankSet(null);
   };
 
   const startWriting = () => {
-    setWriteInputs({});
     setWriteRevealed(false);
     const segs = parseForBlanks(previewCell.answer);
     setBlankSet(pickRandomBlanks(segs, 2));
@@ -812,7 +808,6 @@ export default function App() {
     if (!previewCell) return;
     const segs = parseForBlanks(previewCell.answer);
     setBlankSet(pickRandomBlanks(segs, 2));
-    setWriteInputs({});
     setWriteRevealed(false);
   };
 
@@ -842,7 +837,6 @@ export default function App() {
     setPreviewCell(null);
     setWordHint(null);
     setWriteMode(false);
-    setWriteInputs({});
     setWriteRevealed(false);
     setBlankSet(null);
     setBoardWritingMode(false);
@@ -1278,69 +1272,68 @@ export default function App() {
               </>
             ) : (
               (() => {
-                const segs = parseForBlanks(previewCell.answer);
+                const answerSegs = parseForBlanks(previewCell.answer);
                 const useSet =
-                  blankSet ?? new Set(segs.filter((s) => s.type === 'blank').map((s) => s.idx));
+                  blankSet ?? new Set(answerSegs.filter((s) => s.type === 'blank').map((s) => s.idx));
+                // 빈칸은 입력칸이 아니라 밑줄(공책에 손으로 쓰는 용)
+                const renderBlank = (s, i, revealedColor = false) => {
+                  const width = `${Math.max(s.core.length + 1, 4)}ch`;
+                  if (revealedColor) {
+                    return (
+                      <span key={i}>
+                        {s.pre}
+                        <span className="text-green-700 underline decoration-green-400 decoration-4">{s.core}</span>
+                        {s.post}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={i} className="inline-flex items-baseline">
+                      {s.pre}
+                      <span
+                        className="inline-block mx-1 border-b-4 border-violet-400 align-baseline"
+                        style={{ width, height: '1.1em' }}
+                      />
+                      {s.post}
+                    </span>
+                  );
+                };
+                const renderSeg = (s, i, revealed = false) => {
+                  if (s.type !== 'blank') return <span key={i}>{s.text}</span>;
+                  if (!useSet.has(s.idx)) return <span key={i}>{`${s.pre}${s.core}${s.post}`}</span>;
+                  return renderBlank(s, i, revealed);
+                };
                 return (
                   <>
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3 text-left mb-3">
-                      <p className="text-xs font-black text-blue-500 uppercase tracking-wide mb-1">Question · 질문</p>
-                      <p className="text-xl md:text-2xl font-black text-slate-800 leading-snug">
-                        <ClickableWords text={previewCell.question} onWord={(w) => { speakText(w); setWordHint({ word: w, meaning: lookupMeaning(w) }); }} />
-                      </p>
-                    </div>
-
-                    <p className="text-base font-bold text-violet-700 mb-2">✏️ 빈칸에 알맞은 단어를 써보세요 (공책에 따라 써도 좋아요)</p>
+                    <p className="text-base font-bold text-violet-700 mb-2">
+                      ✏️ 공책에 두 문장을 따라 써보세요 (빈칸은 알맞은 단어로 채우기)
+                    </p>
 
                     <div className="bg-white border-2 border-violet-200 rounded-2xl p-4 text-left text-2xl md:text-3xl font-black text-slate-800 eng-paper">
-                      {segs.map((s, i) => {
-                        // 빈칸으로 안 뽑힌 단어는 그냥 텍스트로
-                        if (s.type !== 'blank' || !useSet.has(s.idx)) {
-                          const text = s.type === 'blank' ? `${s.pre}${s.core}${s.post}` : s.text;
-                          return <span key={i}>{text}</span>;
-                        }
-                        const val = writeInputs[s.idx] || '';
-                        return (
-                          <span key={i} className="inline-flex items-baseline">
-                            {s.pre}
-                            <input
-                              type="text"
-                              value={val}
-                              onChange={(e) =>
-                                setWriteInputs((prev) => ({ ...prev, [s.idx]: e.target.value }))
-                              }
-                              placeholder={'_'.repeat(Math.max(s.core.length, 3))}
-                              className="eng-blank mx-0.5 px-2 text-center bg-yellow-50 outline-none focus:bg-yellow-100"
-                              style={{ width: `${Math.max(s.core.length + 1, 4)}ch` }}
-                            />
-                            {s.post}
-                          </span>
-                        );
-                      })}
+                      <p>
+                        <ClickableWords
+                          text={previewCell.question}
+                          onWord={(w) => { speakText(w); setWordHint({ word: w, meaning: lookupMeaning(w) }); }}
+                        />
+                      </p>
+                      <p>
+                        {answerSegs.map((s, i) => renderSeg(s, i, false))}
+                      </p>
                     </div>
 
                     {writeRevealed && (
                       <div className="mt-4 bg-green-50 border-2 border-green-300 rounded-2xl p-4 text-left">
                         <p className="text-xs font-black text-green-600 uppercase tracking-wide mb-1">정답</p>
-                        <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug">
-                          {segs.map((s, i) =>
-                            s.type !== 'blank' || !useSet.has(s.idx) ? (
-                              <span key={i}>{s.type === 'blank' ? `${s.pre}${s.core}${s.post}` : s.text}</span>
-                            ) : (
-                              <span key={i}>
-                                {s.pre}
-                                <span className="text-green-700 underline decoration-green-400 decoration-4">{s.core}</span>
-                                {s.post}
-                              </span>
-                            )
-                          )}
+                        <p className="text-xl md:text-2xl font-black text-slate-800 leading-snug">{previewCell.question}</p>
+                        <p className="text-2xl md:text-3xl font-black text-slate-800 leading-snug mt-1">
+                          {answerSegs.map((s, i) => renderSeg(s, i, true))}
                         </p>
                       </div>
                     )}
 
                     <div className="mt-5 flex flex-wrap justify-center gap-2">
                       <button
-                        onClick={() => speakText(previewCell.answer)}
+                        onClick={() => speakText(`${previewCell.question} ... ${previewCell.answer}`)}
                         className="px-4 py-2 text-sm md:text-base bg-emerald-500 hover:bg-emerald-400 text-white rounded-full font-black shadow-[0_4px_0_0_rgba(5,150,105,1)] active:shadow-none active:translate-y-1 transition-all"
                       >
                         🔊 듣기
@@ -1365,12 +1358,6 @@ export default function App() {
                         className="px-4 py-2 text-sm md:text-base bg-sky-500 hover:bg-sky-400 text-white rounded-full font-black shadow-[0_4px_0_0_rgba(2,132,199,1)] active:shadow-none active:translate-y-1 transition-all"
                       >
                         🔀 새로 섞기
-                      </button>
-                      <button
-                        onClick={() => { setWriteInputs({}); setWriteRevealed(false); }}
-                        className="px-4 py-2 text-sm md:text-base bg-slate-400 hover:bg-slate-300 text-white rounded-full font-black shadow-[0_4px_0_0_rgba(100,116,139,1)] active:shadow-none active:translate-y-1 transition-all"
-                      >
-                        🔄 다시 쓰기
                       </button>
                       <button
                         onClick={() => setWriteMode(false)}
