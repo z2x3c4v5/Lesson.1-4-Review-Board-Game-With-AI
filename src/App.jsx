@@ -948,14 +948,15 @@ export default function App() {
       <style>{`
         @import url('https://hangeul.pstatic.net/hangeul_static/css/nanum-square-round.css');
 
-        /* 영어 4선 공책: SVG로 정확한 4선(회색 위/점선 가운데/빨강 기준선/회색 아래) 반복 */
+        /* 영어 4선 공책: text-3xl(30px) + line-height 50px 기준으로 4선을 텍스트 메트릭에 맞춤
+           - top y=13 (대문자/ascender 윗선) / mid y=22 (x-height, 점선) / base y=34 (빨강 기준선, 2px) / bot y=40 (descender) */
         .eng-paper {
           background-color: #ffffff;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 100 56'%3E%3Cline x1='0' y1='8' x2='100' y2='8' stroke='%23475569' stroke-opacity='0.6' stroke-width='1'/%3E%3Cline x1='0' y1='26' x2='100' y2='26' stroke='%2364748b' stroke-opacity='0.6' stroke-width='1' stroke-dasharray='4 3'/%3E%3Cline x1='0' y1='44' x2='100' y2='44' stroke='%23dc2626' stroke-opacity='0.85' stroke-width='2'/%3E%3Cline x1='0' y1='54' x2='100' y2='54' stroke='%23475569' stroke-opacity='0.4' stroke-width='1'/%3E%3C/svg%3E");
-          background-size: 100% 56px;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 100 50'%3E%3Cline x1='0' y1='13' x2='100' y2='13' stroke='%23475569' stroke-opacity='0.65' stroke-width='1'/%3E%3Cline x1='0' y1='22' x2='100' y2='22' stroke='%2364748b' stroke-opacity='0.55' stroke-width='1' stroke-dasharray='4 3'/%3E%3Cline x1='0' y1='34' x2='100' y2='34' stroke='%23dc2626' stroke-opacity='0.9' stroke-width='2'/%3E%3Cline x1='0' y1='40' x2='100' y2='40' stroke='%23475569' stroke-opacity='0.4' stroke-width='1'/%3E%3C/svg%3E");
+          background-size: 100% 50px;
           background-repeat: repeat-y;
-          line-height: 56px;
-          padding: 4px 10px 8px;
+          line-height: 50px;
+          padding: 0 10px 8px;
         }
         .eng-paper p { margin: 0; }
 
@@ -1316,7 +1317,7 @@ export default function App() {
                       ✏️ 공책에 두 문장을 따라 써보세요 (빈칸은 알맞은 단어로 채우기)
                     </p>
 
-                    <div className="bg-white border-2 border-violet-200 rounded-2xl p-4 text-left text-2xl md:text-3xl font-black text-slate-800 eng-paper">
+                    <div className="bg-white border-2 border-violet-200 rounded-2xl text-left text-3xl font-black text-slate-800 eng-paper">
                       <p>
                         <ClickableWords
                           text={previewCell.question}
@@ -1331,7 +1332,7 @@ export default function App() {
                     {writeRevealed && (
                       <div className="mt-4 bg-green-50 border-2 border-green-300 rounded-2xl p-3 text-left">
                         <p className="text-xs font-black text-green-600 uppercase tracking-wide mb-2">정답</p>
-                        <div className="bg-white border border-green-200 rounded-xl px-3 text-2xl md:text-3xl font-black text-slate-800 eng-paper">
+                        <div className="bg-white border border-green-200 rounded-xl text-3xl font-black text-slate-800 eng-paper">
                           <p>{previewCell.question}</p>
                           <p>{answerSegs.map((s, i) => renderSeg(s, i, true))}</p>
                         </div>
