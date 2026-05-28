@@ -1294,12 +1294,6 @@ export default function App() {
                   >
                     🔊 다시 듣기
                   </button>
-                  <button
-                    onClick={startWriting}
-                    className="px-5 py-3 bg-violet-500 hover:bg-violet-400 text-white rounded-full font-black text-lg shadow-[0_5px_0_0_rgba(124,58,237,1)] active:shadow-none active:translate-y-1 transition-all"
-                  >
-                    ✏️ 쓰기 활동
-                  </button>
                 </div>
               </>
             ) : (
